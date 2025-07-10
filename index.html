@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Transcript Synchronizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-page: #f0f2f5;
+            --bg-card: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #374151;
+            --text-quote: #4a5568;
+            --border-color: #cbd5e0;
+            --highlight-bg: #e0f2fe;
+            --highlight-text: #1d4ed8;
+            --hover-bg: #e0f2fe;
+            --shadow-light: rgba(0,0,0,0.05);
+            --shadow-medium: rgba(0,0,0,0.1);
+        }
+
+        .dark {
+            --bg-page: #1a202c;
+            --bg-card: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --text-quote: #a0aec0;
+            --border-color: #4a5568;
+            --highlight-bg: #4c51bf;
+            --highlight-text: #e0f2fe;
+            --hover-bg: #667eea;
+            --shadow-light: rgba(0,0,0,0.2);
+            --shadow-medium: rgba(0,0,0,0.3);
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            overflow-y: auto;
+            color: var(--text-primary);
+        }
+
+        #fixed-header-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background-color: var(--bg-page);
+            padding: 0.75rem 0;
+            box-shadow: 0 2px 8px var(--shadow-medium);
+        }
+        #fixed-header-area > div {
+            max-width: 64rem;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        #main-content-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            padding-bottom: 2rem;
+        }
+        #main-content-area > div {
+            max-width: 64rem;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0;
+        }
+
+        .transcript-segment {
+            padding: 4px 0px;
+            border-radius: 4px;
+            transition: background-color 0.8s ease-in-out, box-shadow 0.2s ease-in-out, font-weight 0.2s ease-in-out, color 0.2s ease-in-out;
+            cursor: pointer;
+            line-height: 1.625;
+            white-space: normal;
+            scroll-margin-top: calc(var(--fixed-header-height, 0px) + 20px);
+        }
+        .transcript-segment:hover {
+            background-color: var(--hover-bg);
+            box-shadow: 0 1px 3px var(--shadow-light);
+        }
+
+        .highlight-active {
+            background-color: var(--highlight-bg);
+            box-shadow: 0 2px 4px var(--shadow-light);
+            color: var(--highlight-text);
+        }
+
+        #transcript-content {
+            scroll-behavior: smooth;
+            text-align: justify;
+            padding: 1rem;
+            color: var(--text-primary);
+        }
+        .audio-player-container {
+            background-color: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow-medium);
+            margin-bottom: 0rem;
+        }
+        .transcript-container {
+            background-color: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow-medium);
+        }
+        #transcript-content h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: block;
+            width: 100%;
+            text-align: left;
+        }
+        #transcript-content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+            display: block;
+            width: 100%;
+            text-align: left;
+        }
+        #transcript-content p {
+            margin-bottom: 1rem;
+        }
+        #transcript-content blockquote {
+            border-left: 4px solid var(--border-color);
+            padding-left: 1rem;
+            margin-left: 0;
+            margin-right: 0;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            background-color: var(--bg-page);
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            color: var(--text-quote);
+        }
+        #transcript-content strong {
+            font-weight: bold;
+        }
+        #transcript-content em {
+            font-style: italic;
+        }
+
+        #dark-mode-toggle {
+            background-color: var(--text-primary);
+            color: var(--bg-page);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            border: none;
+        }
+        .dark #dark-mode-toggle {
+            background-color: var(--text-secondary);
+            color: var(--bg-card);
+        }
+        #dark-mode-toggle:hover {
+            opacity: 0.9;
+        }
+
+        #font-size-controls button {
+            background-color: var(--highlight-text);
+            color: var(--bg-card);
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            border: none;
+            margin: 0 0.25rem;
+        }
+        #font-size-controls button:hover {
+            opacity: 0.9;
+        }
+        select {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="fixed-header-area" class="flex flex-col items-center">
+        <div class="w-full">
+            <div class="flex flex-col md:flex-row items-center justify-between mb-2">
+                <header class="text-center md:text-left mb-2 md:mb-0 md:mr-4">
+                    <h1 class="text-4xl font-extrabold" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
+                </header>
+                <div class="flex items-center">
+                    <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Loading episodes...</option>
+                    </select>
+                </div>
+            </div>
+
+            <section class="audio-player-container w-full">
+                <div class="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
+                    <audio id="podcast-audio" controls class="w-full md:w-auto flex-grow rounded-lg shadow-inner mr-0 md:mr-4">
+                        Your browser does not support the audio element. Please try a different browser.
+                    </audio>
+
+                    <div class="flex items-center space-x-4 w-full md:w-auto justify-center md:justify-end">
+                        <button id="dark-mode-toggle" class="whitespace-nowrap">Toggle Dark Mode</button>
+                        <div id="font-size-controls" class="flex items-center space-x-1">
+                            <span class="whitespace-nowrap" style="color: var(--text-secondary);">Font Size:</span>
+                            <button id="font-size-decrease" class="text-lg">-</button>
+                            <button id="font-size-increase" class="text-lg">+</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="main-content-area" class="flex flex-col items-center p-4 sm:p-6 md:p-8">
+        <div class="max-w-4xl w-full space-y-6">
+            <section class="transcript-container">
+                <div id="transcript-content" class="leading-relaxed">
+                    Loading transcript...
+                </div>
+
+                <div id="raw-markdown-transcript" class="hidden"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const audioPlayer = document.getElementById('podcast-audio');
+            const transcriptContent = document.getElementById('transcript-content');
+            const episodeSelect = document.getElementById('episode-select');
+            const fixedHeaderArea = document.getElementById('fixed-header-area');
+            const mainContentArea = document.getElementById('main-content-area');
+
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const fontSizeDecreaseBtn = document.getElementById('font-size-decrease');
+            const fontSizeIncreaseBtn = document.getElementById('font-size-increase');
+
+            let playlist = [];
+            let timestampSegments = [];
+            let currentSegmentIndex = -1;
+            let currentFontSize = 16;
+            const FONT_SIZE_STEP = 2;
+            const PLAYLIST_URL = "https://raw.githubusercontent.com/chee-hung/lamrim/main/public/playlist.json?t=" + new Date().getTime();
+
+            function toggleDarkMode() {
+                document.documentElement.classList.toggle('dark');
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            }
+
+            function applySavedTheme() {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else if (savedTheme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+
+            function changeFontSize(step) {
+                currentFontSize += step;
+                if (currentFontSize < 12) currentFontSize = 12;
+                if (currentFontSize > 24) currentFontSize = 24;
+
+                transcriptContent.style.fontSize = `${currentFontSize}px`;
+                localStorage.setItem('transcriptFontSize', currentFontSize);
+            }
+
+            function applySavedFontSize() {
+                const savedFontSize = localStorage.getItem('transcriptFontSize');
+                if (savedFontSize) {
+                    currentFontSize = parseInt(savedFontSize, 10);
+                } else {
+                    currentFontSize = 16;
+                }
+                transcriptContent.style.fontSize = `${currentFontSize}px`;
+            }
+
+            function saveVolume() {
+                localStorage.setItem('audioVolume', audioPlayer.volume);
+            }
+
+            function applySavedVolume() {
+                const savedVolume = localStorage.getItem('audioVolume');
+                if (savedVolume !== null) {
+                    audioPlayer.volume = parseFloat(savedVolume);
+                } else {
+                    audioPlayer.volume = 0.5;
+                }
+            }
+
+            function setMainContentPaddingAndScrollMargin() {
+                const fixedHeaderHeight = fixedHeaderArea.offsetHeight;
+                mainContentArea.style.paddingTop = `${fixedHeaderHeight}px`;
+
+                document.documentElement.style.setProperty('--fixed-header-height', `${fixedHeaderHeight}px`);
+            }
+
+            const resizeObserver = new ResizeObserver(entries => {
+                setMainContentPaddingAndScrollMargin();
+            });
+            resizeObserver.observe(fixedHeaderArea);
+
+            setMainContentPaddingAndScrollMargin();
+            window.addEventListener('resize', setMainContentPaddingAndScrollMargin);
+
+            function toggleHighlight(index, addHighlight) {
+                if (index >= 0 && index < timestampSegments.length) {
+                    const segment = timestampSegments[index];
+                    if (segment.element) {
+                        if (addHighlight) {
+                            segment.element.classList.add('highlight-active');
+                        } else {
+                            segment.element.classList.remove('highlight-active');
+                        }
+                    }
+                }
+            }
+
+            function scrollElementIntoView(element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function initializeTranscriptSync(transcriptMarkdown) {
+                toggleHighlight(currentSegmentIndex, false);
+                timestampSegments = [];
+                currentSegmentIndex = -1;
+
+                transcriptContent.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">Loading transcript...</div>';
+                const initialHtml = marked.parse(transcriptMarkdown);
+                transcriptContent.innerHTML = initialHtml;
+
+                const segmentWrapperRegex = /\[\[(\d+)\]\]([\s\S]*?)(?=\[\[|$)/g;
+                const textContainers = transcriptContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote > p');
+
+                textContainers.forEach(container => {
+                    let containerHtml = container.innerHTML;
+                    let newContainerHtml = '';
+                    let lastIndex = 0;
+                    let match;
+
+                    while ((match = segmentWrapperRegex.exec(containerHtml)) !== null) {
+                        const time = parseFloat(match[1]);
+                        const content = match[2].trim();
+
+                        newContainerHtml += containerHtml.substring(lastIndex, match.index);
+                        const segmentHtml = `<span class="transcript-segment" data-time="${time}">${content}</span>`;
+                        newContainerHtml += segmentHtml;
+                        lastIndex = match.index + match[0].length;
+                    }
+                    newContainerHtml += containerHtml.substring(lastIndex);
+                    container.innerHTML = newContainerHtml;
+                });
+
+                transcriptContent.querySelectorAll('.transcript-segment[data-time]').forEach(segmentElement => {
+                    const time = parseFloat(segmentElement.dataset.time);
+                    timestampSegments.push({
+                        time: time,
+                        element: segmentElement,
+                        endTime: null
+                    });
+                });
+
+                timestampSegments.sort((a, b) => a.time - b.time);
+
+                for (let i = 0; i < timestampSegments.length; i++) {
+                    if (i < timestampSegments.length - 1) {
+                        timestampSegments[i].endTime = timestampSegments[i + 1].time;
+                    } else {
+                        timestampSegments[i].endTime = audioPlayer.duration || Number.MAX_SAFE_INTEGER;
+                    }
+                }
+
+                if (timestampSegments.length > 0) {
+                    setTimeout(() => {
+                        scrollElementIntoView(timestampSegments[0].element);
+                    }, 50);
+                }
+            }
+
+            audioPlayer.addEventListener('timeupdate', () => {
+                const currentTime = audioPlayer.currentTime;
+                let newSegmentIndex = currentSegmentIndex;
+
+                for (let i = 0; i < timestampSegments.length; i++) {
+                    const segment = timestampSegments[i];
+                    if (currentTime >= segment.time && currentTime < segment.endTime) {
+                        newSegmentIndex = i;
+                        break;
+                    } else if (i === timestampSegments.length - 1 && currentTime >= segment.time) {
+                        newSegmentIndex = i;
+                        break;
+                    } else if (currentTime < timestampSegments[0].time && timestampSegments[0].time > 0) {
+                        newSegmentIndex = -1;
+                        break;
+                    } else if (currentTime < timestampSegments[0].time && timestampSegments[0].time === 0 && currentSegmentIndex !== 0) {
+                        newSegmentIndex = 0;
+                        break;
+                    }
+                }
+
+                if (newSegmentIndex !== currentSegmentIndex) {
+                    toggleHighlight(currentSegmentIndex, false);
+                    toggleHighlight(newSegmentIndex, true);
+                    currentSegmentIndex = newSegmentIndex;
+
+                    if (currentSegmentIndex !== -1) {
+                        scrollElementIntoView(timestampSegments[currentSegmentIndex].element);
+                    }
+                }
+            });
+
+            transcriptContent.addEventListener('click', (event) => {
+                let targetElement = event.target;
+                while (targetElement && !targetElement.classList.contains('transcript-segment') && targetElement !== transcriptContent) {
+                    targetElement = targetElement.parentNode;
+                }
+
+                if (targetElement && targetElement.classList.contains('transcript-segment')) {
+                    const targetTime = parseFloat(targetElement.dataset.time);
+                    if (!isNaN(targetTime)) {
+                        audioPlayer.currentTime = targetTime;
+                        audioPlayer.play();
+                    }
+                }
+            });
+
+            async function loadEpisode(episodeIndex) {
+                const selectedEpisode = playlist[episodeIndex];
+                if (selectedEpisode) {
+                    audioPlayer.src = selectedEpisode.audioSrc;
+                    audioPlayer.load();
+
+                    let transcriptContentMarkdown = '';
+                    if (selectedEpisode.transcriptMarkdown) {
+                        transcriptContentMarkdown = selectedEpisode.transcriptMarkdown;
+                    } else if (selectedEpisode.transcriptUrl) {
+                        transcriptContent.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">Loading transcript from GitHub...</div>';
+                        try {
+                            const transcriptFetchUrl = selectedEpisode.transcriptUrl + "?t=" + new Date().getTime();
+                            const response = await fetch(transcriptFetchUrl);
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            transcriptContentMarkdown = await response.text();
+                        } catch (error) {
+                            console.error('Error fetching transcript:', error);
+                            transcriptContent.innerHTML = `<div class="text-center text-red-500 py-8">Error loading transcript: ${error.message}. Please check the URL.</div>`;
+                            return;
+                        }
+                    }
+                    initializeTranscriptSync(transcriptContentMarkdown);
+                }
+            }
+
+            episodeSelect.addEventListener('change', (event) => {
+                const selectedIndex = parseInt(event.target.value, 10);
+                loadEpisode(selectedIndex);
+            });
+
+            function populatePlaylistDropdown() {
+                episodeSelect.innerHTML = '';
+                if (playlist.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = "";
+                    option.textContent = "No episodes loaded";
+                    episodeSelect.appendChild(option);
+                    episodeSelect.disabled = true;
+                    return;
+                }
+                episodeSelect.disabled = false;
+
+                playlist.forEach((episode, index) => {
+                    const option = document.createElement('option');
+                    option.value = index.toString();
+                    option.textContent = episode.title;
+                    episodeSelect.appendChild(option);
+                });
+            }
+
+            async function fetchPlaylistAndInitialize() {
+                episodeSelect.innerHTML = '<option value="">Loading playlist...</option>';
+                episodeSelect.disabled = true;
+                try {
+                    const response = await fetch(PLAYLIST_URL);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    playlist = await response.json();
+                    populatePlaylistDropdown();
+                    if (playlist.length > 0) {
+                        loadEpisode(0);
+                    } else {
+                        transcriptContent.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">No episodes found in playlist.json.</div>';
+                    }
+                } catch (error) {
+                    console.error('Error fetching playlist:', error);
+                    episodeSelect.innerHTML = '<option value="">Error loading playlist</option>';
+                    transcriptContent.innerHTML = `<div class="text-center text-red-500 py-8">Error loading playlist: ${error.message}. Please check the playlist.json URL and content.</div>`;
+                }
+            }
+
+            applySavedTheme();
+            applySavedFontSize();
+            applySavedVolume();
+            fetchPlaylistAndInitialize();
+
+            darkModeToggle.addEventListener('click', toggleDarkMode);
+            fontSizeDecreaseBtn.addEventListener('click', () => changeFontSize(-FONT_SIZE_STEP));
+            fontSizeIncreaseBtn.addEventListener('click', () => changeFontSize(FONT_SIZE_STEP));
+            audioPlayer.addEventListener('volumechange', saveVolume);
+        });
+    </script>
+</body>
+</html>
+
