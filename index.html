@@ -204,7 +204,7 @@
         <div class="w-full">
             <div class="flex flex-col md:flex-row items-center justify-between mb-2">
                 <header class="text-center md:text-left mb-2 md:mb-0 md:mr-4">
-                    <h1 class="text-4xl font-extrabold" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
+                    <h1 class="text-3xl font-extrabold" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
                 </header>
                 <div class="flex items-center">
                     <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
@@ -262,6 +262,7 @@
             let currentFontSize = 16;
             const FONT_SIZE_STEP = 2;
             const PLAYLIST_URL = "https://raw.githubusercontent.com/chee-hung/lamrim/main/public/playlist.json?t=" + new Date().getTime();
+            const LAST_PLAYED_STATE_KEY = 'lastPlayedState'; // Key for saving episode index and timestamp
 
             function toggleDarkMode() {
                 document.documentElement.classList.toggle('dark');
@@ -283,7 +284,7 @@
             function changeFontSize(step) {
                 currentFontSize += step;
                 if (currentFontSize < 12) currentFontSize = 12;
-                if (currentFontSize > 24) currentFontSize = 24;
+                if (currentFontSize > 36) currentFontSize = 36;
 
                 transcriptContent.style.fontSize = `${currentFontSize}px`;
                 localStorage.setItem('transcriptFontSize', currentFontSize);
@@ -310,6 +311,42 @@
                 } else {
                     audioPlayer.volume = 0.5;
                 }
+            }
+
+            /**
+             * Saves the current episode index and playback timestamp to localStorage.
+             */
+            function savePlaybackState() {
+                const state = {
+                    episodeIndex: episodeSelect.value,
+                    currentTime: audioPlayer.currentTime
+                };
+                localStorage.setItem(LAST_PLAYED_STATE_KEY, JSON.stringify(state));
+            }
+
+            /**
+             * Retrieves and applies the saved episode index and playback timestamp from localStorage.
+             * @returns {object|null} An object with episodeIndex and startTime if found, otherwise null.
+             */
+            function applySavedPlaybackState() {
+                const savedStateString = localStorage.getItem(LAST_PLAYED_STATE_KEY);
+                if (savedStateString) {
+                    try {
+                        const savedState = JSON.parse(savedStateString);
+                        // Ensure saved index is within valid range of the fetched playlist
+                        if (savedState.episodeIndex !== undefined && savedState.currentTime !== undefined &&
+                            parseInt(savedState.episodeIndex) < playlist.length) {
+                            return {
+                                episodeIndex: parseInt(savedState.episodeIndex),
+                                startTime: parseFloat(savedState.currentTime)
+                            };
+                        }
+                    } catch (e) {
+                        console.error("Error parsing saved playback state:", e);
+                        localStorage.removeItem(LAST_PLAYED_STATE_KEY); // Clear corrupted state
+                    }
+                }
+                return null;
             }
 
             function setMainContentPaddingAndScrollMargin() {
@@ -353,7 +390,7 @@
                 const initialHtml = marked.parse(transcriptMarkdown);
                 transcriptContent.innerHTML = initialHtml;
 
-                const segmentWrapperRegex = /\[\[(\d+)\]\]([\s\S]*?)(?=\[\[|$)/g;
+                const segmentWrapperRegex = /\[\[(\d+\.?\d*)\]\]([\s\S]*?)(?=\[\[|$)/g;
                 const textContainers = transcriptContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote > p');
 
                 textContainers.forEach(container => {
@@ -390,7 +427,7 @@
                     if (i < timestampSegments.length - 1) {
                         timestampSegments[i].endTime = timestampSegments[i + 1].time;
                     } else {
-                        timestampSegments[i].endTime = audioPlayer.duration || Number.MAX_SAFE_INTEGER;
+                        audioPlayer.duration ? timestampSegments[i].endTime = audioPlayer.duration : Number.MAX_SAFE_INTEGER;
                     }
                 }
 
@@ -448,11 +485,15 @@
                 }
             });
 
-            async function loadEpisode(episodeIndex) {
+            async function loadEpisode(episodeIndex, startTime = 0) { // Added startTime parameter
                 const selectedEpisode = playlist[episodeIndex];
                 if (selectedEpisode) {
                     audioPlayer.src = selectedEpisode.audioSrc;
                     audioPlayer.load();
+
+                    // Set volume immediately, it will be overridden by saved volume if available
+                    // applySavedVolume() is called on DOMContentLoaded, so this is fine.
+                    // audioPlayer.volume = 0.5; // Removed as applySavedVolume handles this
 
                     let transcriptContentMarkdown = '';
                     if (selectedEpisode.transcriptMarkdown) {
@@ -473,12 +514,22 @@
                         }
                     }
                     initializeTranscriptSync(transcriptContentMarkdown);
+
+                    // Set playback time after metadata is loaded
+                    audioPlayer.onloadedmetadata = () => {
+                        if (startTime > 0 && startTime < audioPlayer.duration) {
+                            audioPlayer.currentTime = startTime;
+                        }
+                        // Remove the event listener after it's used once to avoid multiple calls
+                        audioPlayer.onloadedmetadata = null;
+                    };
                 }
             }
 
             episodeSelect.addEventListener('change', (event) => {
                 const selectedIndex = parseInt(event.target.value, 10);
                 loadEpisode(selectedIndex);
+                savePlaybackState(); // Save state when episode changes
             });
 
             function populatePlaylistDropdown() {
@@ -511,8 +562,16 @@
                     }
                     playlist = await response.json();
                     populatePlaylistDropdown();
+
+                    const savedState = applySavedPlaybackState(); // Try to get saved state
+
                     if (playlist.length > 0) {
-                        loadEpisode(0);
+                        if (savedState && savedState.episodeIndex !== undefined) {
+                            episodeSelect.value = savedState.episodeIndex; // Select the saved episode
+                            loadEpisode(savedState.episodeIndex, savedState.startTime); // Load with saved time
+                        } else {
+                            loadEpisode(0); // Load first episode from beginning
+                        }
                     } else {
                         transcriptContent.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">No episodes found in playlist.json.</div>';
                     }
@@ -532,6 +591,8 @@
             fontSizeDecreaseBtn.addEventListener('click', () => changeFontSize(-FONT_SIZE_STEP));
             fontSizeIncreaseBtn.addEventListener('click', () => changeFontSize(FONT_SIZE_STEP));
             audioPlayer.addEventListener('volumechange', saveVolume);
+            audioPlayer.addEventListener('pause', savePlaybackState); // Save state on pause
+            audioPlayer.addEventListener('ended', savePlaybackState); // Save state on ended
         });
     </script>
 </body>
