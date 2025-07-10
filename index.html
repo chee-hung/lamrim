@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Transcript Synchronizer</title>
+    <title>《菩提道次第广论》手抄稿</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
@@ -107,11 +107,17 @@
         }
         .audio-player-container {
             background-color: var(--bg-card);
-            padding: 1.5rem;
+            padding: 1rem;
             border-radius: 12px;
             box-shadow: 0 4px 12px var(--shadow-medium);
             margin-bottom: 0rem;
         }
+        @media (min-width: 768px) {
+            .audio-player-container {
+                padding: 1.5rem;
+            }
+        }
+
         .transcript-container {
             background-color: var(--bg-card);
             padding: 1.5rem;
@@ -202,9 +208,9 @@
 <body>
     <div id="fixed-header-area" class="flex flex-col items-center">
         <div class="w-full">
-            <div class="flex flex-col md:flex-row items-center justify-between mb-2">
-                <header class="text-center md:text-left mb-2 md:mb-0 md:mr-4">
-                    <h1 class="text-3xl font-extrabold" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
+            <div class="flex flex-col md:flex-row items-center justify-between mb-1 md:mb-2">
+                <header class="text-center md:text-left mb-1 md:mb-0 md:mr-4">
+                    <h1 class="text-2xl md:text-3xl font-extrabold" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
                 </header>
                 <div class="flex items-center">
                     <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
@@ -219,12 +225,12 @@
                         Your browser does not support the audio element. Please try a different browser.
                     </audio>
 
-                    <div class="flex items-center space-x-4 w-full md:w-auto justify-center md:justify-end">
-                        <button id="dark-mode-toggle" class="whitespace-nowrap">Toggle Dark Mode</button>
+                    <div class="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-center md:justify-end mt-2 md:mt-0">
+                        <button id="dark-mode-toggle" class="whitespace-nowrap text-sm md:text-base">Toggle Dark Mode</button>
                         <div id="font-size-controls" class="flex items-center space-x-1">
-                            <span class="whitespace-nowrap" style="color: var(--text-secondary);">Font Size:</span>
-                            <button id="font-size-decrease" class="text-lg">-</button>
-                            <button id="font-size-increase" class="text-lg">+</button>
+                            <span class="whitespace-nowrap text-sm md:text-base" style="color: var(--text-secondary);">Font Size:</span>
+                            <button id="font-size-decrease" class="text-sm md:text-lg">-</button>
+                            <button id="font-size-increase" class="text-sm md:text-lg">+</button>
                         </div>
                     </div>
                 </div>
@@ -262,7 +268,7 @@
             let currentFontSize = 16;
             const FONT_SIZE_STEP = 2;
             const PLAYLIST_URL = "https://raw.githubusercontent.com/chee-hung/lamrim/main/public/playlist.json?t=" + new Date().getTime();
-            const LAST_PLAYED_STATE_KEY = 'lastPlayedState'; // Key for saving episode index and timestamp
+            const LAST_PLAYED_STATE_KEY = 'lastPlayedState';
 
             function toggleDarkMode() {
                 document.documentElement.classList.toggle('dark');
@@ -313,9 +319,6 @@
                 }
             }
 
-            /**
-             * Saves the current episode index and playback timestamp to localStorage.
-             */
             function savePlaybackState() {
                 const state = {
                     episodeIndex: episodeSelect.value,
@@ -324,16 +327,11 @@
                 localStorage.setItem(LAST_PLAYED_STATE_KEY, JSON.stringify(state));
             }
 
-            /**
-             * Retrieves and applies the saved episode index and playback timestamp from localStorage.
-             * @returns {object|null} An object with episodeIndex and startTime if found, otherwise null.
-             */
             function applySavedPlaybackState() {
                 const savedStateString = localStorage.getItem(LAST_PLAYED_STATE_KEY);
                 if (savedStateString) {
                     try {
                         const savedState = JSON.parse(savedStateString);
-                        // Ensure saved index is within valid range of the fetched playlist
                         if (savedState.episodeIndex !== undefined && savedState.currentTime !== undefined &&
                             parseInt(savedState.episodeIndex) < playlist.length) {
                             return {
@@ -343,7 +341,7 @@
                         }
                     } catch (e) {
                         console.error("Error parsing saved playback state:", e);
-                        localStorage.removeItem(LAST_PLAYED_STATE_KEY); // Clear corrupted state
+                        localStorage.removeItem(LAST_PLAYED_STATE_KEY);
                     }
                 }
                 return null;
@@ -485,15 +483,11 @@
                 }
             });
 
-            async function loadEpisode(episodeIndex, startTime = 0) { // Added startTime parameter
+            async function loadEpisode(episodeIndex, startTime = 0) {
                 const selectedEpisode = playlist[episodeIndex];
                 if (selectedEpisode) {
                     audioPlayer.src = selectedEpisode.audioSrc;
                     audioPlayer.load();
-
-                    // Set volume immediately, it will be overridden by saved volume if available
-                    // applySavedVolume() is called on DOMContentLoaded, so this is fine.
-                    // audioPlayer.volume = 0.5; // Removed as applySavedVolume handles this
 
                     let transcriptContentMarkdown = '';
                     if (selectedEpisode.transcriptMarkdown) {
@@ -515,12 +509,10 @@
                     }
                     initializeTranscriptSync(transcriptContentMarkdown);
 
-                    // Set playback time after metadata is loaded
                     audioPlayer.onloadedmetadata = () => {
                         if (startTime > 0 && startTime < audioPlayer.duration) {
                             audioPlayer.currentTime = startTime;
                         }
-                        // Remove the event listener after it's used once to avoid multiple calls
                         audioPlayer.onloadedmetadata = null;
                     };
                 }
@@ -529,7 +521,7 @@
             episodeSelect.addEventListener('change', (event) => {
                 const selectedIndex = parseInt(event.target.value, 10);
                 loadEpisode(selectedIndex);
-                savePlaybackState(); // Save state when episode changes
+                savePlaybackState();
             });
 
             function populatePlaylistDropdown() {
@@ -563,14 +555,14 @@
                     playlist = await response.json();
                     populatePlaylistDropdown();
 
-                    const savedState = applySavedPlaybackState(); // Try to get saved state
+                    const savedState = applySavedPlaybackState();
 
                     if (playlist.length > 0) {
                         if (savedState && savedState.episodeIndex !== undefined) {
-                            episodeSelect.value = savedState.episodeIndex; // Select the saved episode
-                            loadEpisode(savedState.episodeIndex, savedState.startTime); // Load with saved time
+                            episodeSelect.value = savedState.episodeIndex;
+                            loadEpisode(savedState.episodeIndex, savedState.startTime);
                         } else {
-                            loadEpisode(0); // Load first episode from beginning
+                            loadEpisode(0);
                         }
                     } else {
                         transcriptContent.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">No episodes found in playlist.json.</div>';
@@ -591,8 +583,8 @@
             fontSizeDecreaseBtn.addEventListener('click', () => changeFontSize(-FONT_SIZE_STEP));
             fontSizeIncreaseBtn.addEventListener('click', () => changeFontSize(FONT_SIZE_STEP));
             audioPlayer.addEventListener('volumechange', saveVolume);
-            audioPlayer.addEventListener('pause', savePlaybackState); // Save state on pause
-            audioPlayer.addEventListener('ended', savePlaybackState); // Save state on ended
+            audioPlayer.addEventListener('pause', savePlaybackState);
+            audioPlayer.addEventListener('ended', savePlaybackState);
         });
     </script>
 </body>
