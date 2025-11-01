@@ -507,6 +507,7 @@
             async function loadEpisode(episodeIndex, startTime = 0) {
                 const selectedEpisode = playlist[episodeIndex];
                 if (selectedEpisode) {
+                    audioPlayer.crossOrigin = "anonymous";
                     audioPlayer.src = selectedEpisode.audioSrc;
                     audioPlayer.load();
 
