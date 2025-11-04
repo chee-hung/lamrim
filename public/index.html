@@ -16,9 +16,11 @@
             --border-color: #cbd5e0;
             --highlight-bg: #e0f2fe;
             --highlight-text: #1d4ed8;
-            --hover-bg: #e0f2fe;
+            --hover-bg: #e0f2fe; 
             --shadow-light: rgba(0,0,0,0.05);
             --shadow-medium: rgba(0,0,0,0.1);
+            /* New variable: set dynamically by JS to be header height + padding */
+            --header-clearance-height: 200px; 
         }
 
         .dark {
@@ -30,67 +32,99 @@
             --border-color: #4a5568;
             --highlight-bg: #4c51bf;
             --highlight-text: #e0f2fe;
-            --hover-bg: #667eea;
+            --hover-bg: #667eea; 
             --shadow-light: rgba(0,0,0,0.2);
             --shadow-medium: rgba(0,0,0,0.3);
         }
 
+        /* --- HYPER-AGGRESSIVE CSS RESET FOR HOST ENVIRONMENT --- */
+        html, body, #app-container {
+            margin: 0 !important; 
+            padding: 0 !important; 
+            height: 100% !important; 
+            min-height: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden; 
+        }
+        /* -------------------------------------------------------- */
+
+
         html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-page);
-            overflow-y: auto;
             color: var(--text-primary);
         }
 
+        #app-container {
+            height: 100vh !important; 
+            position: relative;
+            background-color: var(--bg-page);
+        }
+
         #fixed-header-area {
-            position: fixed;
-            top: 0;
+            position: absolute !important; 
+            top: 0 !important; 
             left: 0;
             right: 0;
             z-index: 100;
             background-color: var(--bg-page);
             padding: 0.75rem 0;
             box-shadow: 0 2px 8px var(--shadow-medium);
+            transition: transform 0.3s ease-in-out;
         }
-        #fixed-header-area > div {
-            max-width: 64rem;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-
-        #main-content-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        
+        #main-content-scrollable-wrapper {
+            height: 100%; 
+            overflow-y: auto;
             padding-left: 1rem;
             padding-right: 1rem;
             padding-bottom: 2rem;
+            transition: margin-top 0.3s ease-in-out;
         }
-        #main-content-area > div {
-            max-width: 64rem;
-            width: 100%;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 0;
+        
+        /* Dark Mode Fix for Dropdown Select Element */
+        .dark #episode-select {
+            background-color: var(--bg-card); 
+            color: var(--text-primary);     
+            border-color: var(--border-color); 
         }
 
+        /* Restore vertical paragraph spacing */
+        #transcript-content p {
+            margin-bottom: 1.5rem; 
+        }
+        
+        /* --- Restore Markdown Header Styling --- */
+        #transcript-content h1, 
+        #transcript-content h2, 
+        #transcript-content h3 {
+            font-weight: bold;
+            margin-top: 2.5rem;   /* Space above header */
+            margin-bottom: 1rem;  /* Space below header */
+            line-height: 1.2;
+        }
+        #transcript-content h1 { font-size: 1.8em; }
+        #transcript-content h2 { font-size: 1.6em; }
+        #transcript-content h3 { font-size: 1.4em; }
+        /* -------------------------------------- */
+
+        #transcript-content blockquote {
+            margin: 1.5rem 0;
+            padding-left: 1rem;
+            border-left: 4px solid var(--border-color);
+            color: var(--text-quote);
+            font-style: italic;
+        }
+        
         .transcript-segment {
             padding: 4px 0px;
             border-radius: 4px;
-            transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, font-weight 0.2s ease-in-out, color 0.2s ease-in-out;
+            /* Removed background-color transition to prevent flicker on hover/click */
+            transition: box-shadow 0.2s ease-in-out, font-weight 0.2s ease-in-out, color 0.2s ease-in-out; 
             cursor: pointer;
             line-height: 1.625;
             white-space: normal;
-            scroll-margin-top: calc(var(--fixed-header-height, 0px) + 20px);
-        }
-        .transcript-segment:hover {
-#            background-color: var(--hover-bg1);
-            box-shadow: 0 1px 3px var(--shadow-light);
+            scroll-margin-top: var(--header-clearance-height);
         }
 
         .highlight-active {
@@ -120,142 +154,69 @@
 
         .transcript-container {
             background-color: var(--bg-card);
-            padding: 0.5rem;
+            padding: 1.5rem;
             border-radius: 12px;
             box-shadow: 0 4px 12px var(--shadow-medium);
-        }
-        #transcript-content h2 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-top: 0.5rem;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-            display: block;
-            width: 100%;
-            text-align: left;
-        }
-        #transcript-content h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-top: 2rem;
-            margin-bottom: 0.75rem;
-            color: var(--text-secondary);
-            display: block;
-            width: 100%;
-            text-align: left;
-        }
-        #transcript-content p {
-            margin-bottom: 1rem;
-        }
-        #transcript-content blockquote {
-            border-left: 4px solid var(--border-color);
-            padding-left: 1rem;
-            padding-right: 1rem;
-            margin-left: 0;
-            margin-right: 0;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            background-color: var(--bg-page);
-            border-radius: 4px;
-            margin-bottom: 1.5rem;
-            color: var(--text-quote);
-        }
-        #transcript-content strong {
-            font-weight: bold;
-        }
-        #transcript-content em {
-            font-style: italic;
-        }
-
-        /* Dark Mode Toggle and Font Size Buttons - Consistent Styling */
-        #dark-mode-toggle,
-        #font-size-controls button {
-            background-color: var(--text-primary);
-            color: var(--bg-page);
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .dark #dark-mode-toggle,
-        .dark #font-size-controls button {
-            background-color: var(--text-secondary);
-            color: var(--bg-card);
-        }
-        #dark-mode-toggle:hover,
-        #font-size-controls button:hover {
-            opacity: 0.9;
-        }
-        /* Specific adjustments for font size buttons to maintain size */
-        #font-size-controls button {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.875rem;
-        }
-        @media (min-width: 768px) {
-            #font-size-controls button {
-                font-size: 1.125rem;
-            }
-        }
-
-        select {
-            background-color: var(--bg-card);
-            color: var(--text-primary);
-            border-color: var(--border-color);
+            margin-bottom: 2rem;
         }
     </style>
 </head>
 <body>
-    <div id="fixed-header-area" class="flex flex-col items-center">
-        <div class="w-full">
-            <div class="flex flex-col md:flex-row items-center justify-between mb-1 md:mb-2">
-                <header class="text-center md:text-left mb-1 md:mb-0 md:mr-4">
-                    <h1 class="text-2xl md:text-3xl font-extrabold" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
-                </header>
-                <div class="flex items-center">
-                    <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Loading episodes...</option>
-                    </select>
-                </div>
-            </div>
-
-            <section class="audio-player-container w-full">
-                <div class="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
-                    <audio id="podcast-audio" controls class="w-full md:w-auto md:flex-grow rounded-lg shadow-inner mr-0 md:mr-4">
-                        Your browser does not support the audio element. Please try a different browser.
-                    </audio>
-
-                    <div class="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-center md:justify-end mt-2 md:mt-0">
-                        <button id="dark-mode-toggle" class="whitespace-nowrap text-sm md:text-base" aria-label="Toggle Dark Mode">
-                            <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>
-                            <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle hidden"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
-                        </button>
-                        <div id="font-size-controls" class="flex items-center space-x-1">
-                            <span class="whitespace-nowrap text-sm md:text-base" style="color: var(--text-secondary);" aria-label="Font Size">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
-                            </span>
-                            <button id="font-size-decrease" aria-label="Decrease Font Size">-</button>
-                            <button id="font-size-increase" aria-label="Increase Font Size">+</button>
-                        </div>
+    <div id="app-container">
+        <!-- Header is ABSOLUTE, sitting on top of the content -->
+        <div id="fixed-header-area" class="flex flex-col items-center">
+            <div class="w-full sm:max-w-5xl lg:max-w-6xl mx-auto px-4">
+                <div class="flex flex-col md:flex-row items-center justify-between mb-1 md:mb-2">
+                    <header class="text-center md:text-left mb-1 md:mb-0 md:mr-4">
+                        <h1 class="text-2xl md:text-3xl font-extrabold my-0" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
+                    </header>
+                    <div class="flex items-center">
+                        <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Loading episodes...</option>
+                        </select>
                     </div>
                 </div>
-            </section>
+
+                <section class="audio-player-container w-full">
+                    <div class="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
+                        <!-- Added cross-origin attribute here for good measure, although setting it in JS is more dynamic -->
+                        <audio id="podcast-audio" controls class="w-full md:w-auto md:flex-grow rounded-lg shadow-inner mr-0 md:mr-4" crossorigin="anonymous"> 
+                            Your browser does not support the audio element.
+                        </audio>
+
+                        <div class="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-center md:justify-end mt-2 md:mt-0">
+                            <button id="dark-mode-toggle" class="whitespace-nowrap text-sm md:text-base" aria-label="Toggle Dark Mode">
+                                <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.93 4.93l1.41 1.41"></path><path d="M17.66 17.66l1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M6.34 17.66l-1.41 1.41"></path><path d="M19.07 4.93l-1.41 1.41"></path></svg>
+                                <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle hidden"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+                            </button>
+                            <div id="font-size-controls" class="flex items-center space-x-1">
+                                <span class="whitespace-nowrap text-sm md:text-base" style="color: var(--text-secondary);" aria-label="Font Size">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                                </span>
+                                <button id="font-size-decrease" 
+                                    class="w-8 h-8 flex items-center justify-center font-bold text-lg rounded-full shadow-md transition duration-150 ease-in-out bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                    aria-label="Decrease Font Size">-</button>
+                                <button id="font-size-increase"
+                                    class="w-8 h-8 flex items-center justify-center font-bold text-lg rounded-full shadow-md transition duration-150 ease-in-out bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                    aria-label="Increase Font Size">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </div>
-    </div>
+        
+        <!-- This is the scrollable container. Its margin-top manages the gap. -->
+        <div id="main-content-scrollable-wrapper">
+            <div id="main-content-area" class="w-full sm:max-w-5xl lg:max-w-6xl mx-auto space-y-6">
+                <section class="transcript-container">
+                    <div id="transcript-content" class="leading-relaxed">
+                        Loading transcript...
+                    </div>
 
-    <div id="main-content-area" class="flex flex-col items-center p-4 sm:p-6 md:p-8">
-        <div class="max-w-4xl w-full space-y-6">
-            <section class="transcript-container">
-                <div id="transcript-content" class="leading-relaxed">
-                    Loading transcript...
-                </div>
-
-                <div id="raw-markdown-transcript" class="hidden"></div>
-            </section>
+                    <div id="raw-markdown-transcript" class="hidden"></div>
+                </section>
+            </div>
         </div>
     </div>
 
@@ -265,21 +226,74 @@
             const transcriptContent = document.getElementById('transcript-content');
             const episodeSelect = document.getElementById('episode-select');
             const fixedHeaderArea = document.getElementById('fixed-header-area');
-            const mainContentArea = document.getElementById('main-content-area');
+            const scrollWrapper = document.getElementById('main-content-scrollable-wrapper'); // SCROLL TARGET
 
             const darkModeToggle = document.getElementById('dark-mode-toggle');
             const sunIcon = document.getElementById('sun-icon');
             const moonIcon = document.getElementById('moon-icon');
             const fontSizeDecreaseBtn = document.getElementById('font-size-decrease');
             const fontSizeIncreaseBtn = document.getElementById('font-size-increase');
+            
+            // --- FIX FOR CROSS-ORIGIN AUDIO ---
+            audioPlayer.crossOrigin = "anonymous";
+            // ----------------------------------
+
+            const CONTENT_PADDING_TOP = 32; 
 
             let playlist = [];
             let timestampSegments = [];
             let currentSegmentIndex = -1;
-            let currentFontSize = 24;
+            // Default Text Size is 20px
+            let currentFontSize = 20; 
             const FONT_SIZE_STEP = 2;
             const PLAYLIST_URL = "https://raw.githubusercontent.com/chee-hung/lamrim/main/public/playlist.json?t=" + new Date().getTime();
             const LAST_PLAYED_STATE_KEY = 'lastPlayedState';
+            
+            let lastScrollTop = 0;
+            const scrollThreshold = 50; 
+            
+            let isProgrammaticScroll = false;
+            const PROGRAMMATIC_SCROLL_DURATION = 800; // Time buffer to ignore programmatic scroll events
+
+            function updateContentMargin(isHidden, fixedHeaderHeight) {
+                const clearanceHeight = isHidden ? CONTENT_PADDING_TOP : (fixedHeaderHeight + CONTENT_PADDING_TOP); 
+                
+                scrollWrapper.style.marginTop = `${clearanceHeight}px`;
+                document.documentElement.style.setProperty('--header-clearance-height', `${clearanceHeight}px`);
+            }
+            
+            function handleScroll(event) {
+                if (isProgrammaticScroll) {
+                    return; 
+                }
+
+                const currentScroll = event.target.scrollTop;
+                const fixedHeaderHeight = fixedHeaderArea.offsetHeight;
+                
+                if (currentScroll !== lastScrollTop) {
+                    
+                    if (currentScroll > lastScrollTop && currentScroll > scrollThreshold) {
+                        // Scrolling Down -> Hide Header
+                        if (!fixedHeaderArea.classList.contains('header-hidden')) {
+                             fixedHeaderArea.style.transform = `translateY(-${fixedHeaderHeight}px)`;
+                             fixedHeaderArea.classList.add('header-hidden');
+                             updateContentMargin(true, fixedHeaderHeight); 
+                        }
+                    } 
+                    else if (currentScroll < lastScrollTop || currentScroll <= CONTENT_PADDING_TOP) {
+                        // Scrolling Up or near top -> Show Header
+                        if (fixedHeaderArea.classList.contains('header-hidden')) {
+                            fixedHeaderArea.style.transform = 'translateY(0)';
+                            fixedHeaderArea.classList.remove('header-hidden');
+                            updateContentMargin(false, fixedHeaderHeight);
+                        }
+                    }
+                }
+
+                lastScrollTop = currentScroll;
+            }
+            
+            scrollWrapper.addEventListener('scroll', handleScroll, { passive: true });
 
             function toggleDarkMode() {
                 document.documentElement.classList.toggle('dark');
@@ -323,7 +337,7 @@
                 if (savedFontSize) {
                     currentFontSize = parseInt(savedFontSize, 10);
                 } else {
-                    currentFontSize = 16;
+                    currentFontSize = 20; // Default: 20px
                 }
                 transcriptContent.style.fontSize = `${currentFontSize}px`;
             }
@@ -369,20 +383,18 @@
                 return null;
             }
 
-            function setMainContentPaddingAndScrollMargin() {
+            function setInitialLayout() {
                 const fixedHeaderHeight = fixedHeaderArea.offsetHeight;
-                mainContentArea.style.paddingTop = `${fixedHeaderHeight}px`;
-
-                document.documentElement.style.setProperty('--fixed-header-height', `${fixedHeaderHeight}px`);
+                updateContentMargin(false, fixedHeaderHeight);
             }
 
             const resizeObserver = new ResizeObserver(entries => {
-                setMainContentPaddingAndScrollMargin();
+                setInitialLayout();
             });
             resizeObserver.observe(fixedHeaderArea);
 
-            setMainContentPaddingAndScrollMargin();
-            window.addEventListener('resize', setMainContentPaddingAndScrollMargin);
+            setInitialLayout();
+            window.addEventListener('resize', setInitialLayout);
 
             function toggleHighlight(index, addHighlight) {
                 if (index >= 0 && index < timestampSegments.length) {
@@ -398,7 +410,14 @@
             }
 
             function scrollElementIntoView(element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                isProgrammaticScroll = true; // Block header hiding
+                const behavior = 'smooth'; 
+                element.scrollIntoView({ behavior: behavior, block: 'center' });
+                
+                // Reset flag after the smooth scroll is expected to complete
+                setTimeout(() => {
+                    isProgrammaticScroll = false;
+                }, PROGRAMMATIC_SCROLL_DURATION); 
             }
 
             function initializeTranscriptSync(transcriptMarkdown) {
@@ -411,28 +430,37 @@
                 transcriptContent.innerHTML = initialHtml;
 
                 const segmentWrapperRegex = /\[\[(\d+\.?\d*)\]\]([\s\S]*?)(?=\[\[|$)/g;
-                const textContainers = transcriptContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote > p');
+                // Include h1-h6 for parsing as well
+                const textContainers = transcriptContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, blockquote');
 
                 textContainers.forEach(container => {
-                    let containerHtml = container.innerHTML;
-                    let newContainerHtml = '';
-                    let lastIndex = 0;
+                    const contentToProcess = container.tagName === 'BLOCKQUOTE' ? container.innerHTML : container.outerHTML;
+                    let lastProcessedIndex = 0;
+                    let newContentHtml = '';
                     let match;
 
-                    while ((match = segmentWrapperRegex.exec(containerHtml)) !== null) {
+                    while ((match = segmentWrapperRegex.exec(contentToProcess)) !== null) {
                         const time = parseFloat(match[1]);
                         const content = match[2].trim();
 
-                        newContainerHtml += containerHtml.substring(lastIndex, match.index);
+                        newContentHtml += contentToProcess.substring(lastProcessedIndex, match.index);
                         const segmentHtml = `<span class="transcript-segment" data-time="${time}">${content}</span>`;
-                        newContainerHtml += segmentHtml;
-                        lastIndex = match.index + match[0].length;
+                        newContentHtml += segmentHtml;
+                        lastProcessedIndex = match.index + match[0].length;
                     }
-                    newContainerHtml += containerHtml.substring(lastIndex);
-                    container.innerHTML = newContainerHtml;
+
+                    newContentHtml += contentToProcess.substring(lastProcessedIndex);
+                    
+                    if (container.tagName === 'P' || container.tagName.startsWith('H')) {
+                         container.outerHTML = newContentHtml; 
+                    } else {
+                        container.innerHTML = newContentHtml; 
+                    }
                 });
 
-                transcriptContent.querySelectorAll('.transcript-segment[data-time]').forEach(segmentElement => {
+                const segmentElements = document.querySelectorAll('#transcript-content .transcript-segment[data-time]');
+
+                segmentElements.forEach(segmentElement => {
                     const time = parseFloat(segmentElement.dataset.time);
                     timestampSegments.push({
                         time: time,
@@ -508,7 +536,6 @@
             async function loadEpisode(episodeIndex, startTime = 0) {
                 const selectedEpisode = playlist[episodeIndex];
                 if (selectedEpisode) {
-                    audioPlayer.crossOrigin = "anonymous";
                     audioPlayer.src = selectedEpisode.audioSrc;
                     audioPlayer.load();
 
@@ -608,6 +635,15 @@
             audioPlayer.addEventListener('volumechange', saveVolume);
             audioPlayer.addEventListener('pause', savePlaybackState);
             audioPlayer.addEventListener('ended', savePlaybackState);
+
+            document.body.addEventListener('click', (event) => {
+                const shouldIgnoreClick = event.target.closest('#fixed-header-area') || event.target.closest('.transcript-segment');
+
+                if (!shouldIgnoreClick && !audioPlayer.paused) {
+                    console.log("Background click detected: Pausing audio.");
+                    audioPlayer.pause();
+                }
+            });
         });
     </script>
 </body>
