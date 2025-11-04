@@ -19,7 +19,7 @@
             --hover-bg: #e0f2fe; 
             --shadow-light: rgba(0,0,0,0.05);
             --shadow-medium: rgba(0,0,0,0.1);
-            /* New variable: set dynamically by JS to be header height + padding */
+            /* This value is calculated in JS to be HEADER HEIGHT + CLIP_PREVENTION_BUFFER */
             --header-clearance-height: 200px; 
         }
 
@@ -124,6 +124,7 @@
             cursor: pointer;
             line-height: 1.625;
             white-space: normal;
+            /* Scroll-margin-top now uses the dynamic CSS variable */
             scroll-margin-top: var(--header-clearance-height);
         }
 
@@ -154,7 +155,7 @@
 
         .transcript-container {
             background-color: var(--bg-card);
-            padding: 0; /* Updated: Set padding to zero as requested (4) */
+            padding: 0; 
             border-radius: 12px;
             box-shadow: 0 4px 12px var(--shadow-medium);
             margin-bottom: 2rem;
@@ -171,7 +172,6 @@
                         <h1 class="text-2xl md:text-3xl font-extrabold my-0" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
                     </header>
                     <div class="flex items-center w-full md:w-auto">
-                        <!-- Updated: Added classes for truncation on mobile (3) -->
                         <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 w-full md:w-auto overflow-hidden text-ellipsis whitespace-nowrap">
                             <option value="">Loading episodes...</option>
                         </select>
@@ -236,32 +236,46 @@
             
             audioPlayer.crossOrigin = "anonymous";
 
-            // Updated: Increased padding to prevent header clipping on reveal (2)
-            const CONTENT_PADDING_TOP = 40; 
+            // Buffer needed to prevent the title clipping when the hidden header slides back down.
+            const CLIP_PREVENTION_BUFFER = 64; 
+            // Minimal padding/clearance when the header is visible (0.5rem)
+            const TOP_CONTENT_CLEARANCE = 8; 
 
             let playlist = [];
             let timestampSegments = [];
             let currentSegmentIndex = -1;
-            // Default Text Size is 20px
             let currentFontSize = 20; 
             const FONT_SIZE_STEP = 2;
             const PLAYLIST_URL = "https://raw.githubusercontent.com/chee-hung/lamrim/main/public/playlist.json?t=" + new Date().getTime();
             const LAST_PLAYED_STATE_KEY = 'lastPlayedState';
             
             let lastScrollTop = 0;
-            // Updated: Increased scroll threshold for less sensitive auto-hiding (1)
+            // Scroll threshold for less sensitive auto-hiding
             const scrollThreshold = 100; 
             
             let isProgrammaticScroll = false;
-            const PROGRAMMATIC_SCROLL_DURATION = 800; // Time buffer to ignore programmatic scroll events
+            const PROGRAMMATIC_SCROLL_DURATION = 800; 
 
-            function updateContentMargin(isHidden, fixedHeaderHeight) {
-                const clearanceHeight = isHidden ? CONTENT_PADDING_TOP : (fixedHeaderHeight + CONTENT_PADDING_TOP); 
+            /**
+             * Sets the margin-top of the scrollable wrapper and updates the CSS variable 
+             * used for scroll-margin-top on transcript segments. This is called when the header is visible or needs to be revealed.
+             * @param {number} fixedHeaderHeight - The current computed height of the fixed header.
+             */
+            function updateHeaderLayout(fixedHeaderHeight) {
+                // 1. Margin for the content wrapper when the header is visible (pushes content below header)
+                scrollWrapper.style.marginTop = `${fixedHeaderHeight + TOP_CONTENT_CLEARANCE}px`;
                 
-                scrollWrapper.style.marginTop = `${clearanceHeight}px`;
-                document.documentElement.style.setProperty('--header-clearance-height', `${clearanceHeight}px`);
+                // 2. Set the scroll-margin-top buffer for smooth scrolling (must include large buffer)
+                document.documentElement.style.setProperty(
+                    '--header-clearance-height', 
+                    `${fixedHeaderHeight + CLIP_PREVENTION_BUFFER}px`
+                );
+
+                // 3. Ensure header is visible on layout update
+                fixedHeaderArea.style.transform = 'translateY(0)';
+                fixedHeaderArea.classList.remove('header-hidden');
             }
-            
+
             function handleScroll(event) {
                 if (isProgrammaticScroll) {
                     return; 
@@ -277,15 +291,14 @@
                         if (!fixedHeaderArea.classList.contains('header-hidden')) {
                              fixedHeaderArea.style.transform = `translateY(-${fixedHeaderHeight}px)`;
                              fixedHeaderArea.classList.add('header-hidden');
-                             updateContentMargin(true, fixedHeaderHeight); 
+                             // FIX: Set margin-top to 0 to eliminate the gap and let content flow to the top
+                             scrollWrapper.style.marginTop = '0px'; 
                         }
                     } 
-                    else if (currentScroll < lastScrollTop || currentScroll <= CONTENT_PADDING_TOP) {
+                    else if (currentScroll < lastScrollTop || currentScroll <= fixedHeaderHeight) {
                         // Scrolling Up or near top -> Show Header
                         if (fixedHeaderArea.classList.contains('header-hidden')) {
-                            fixedHeaderArea.style.transform = 'translateY(0)';
-                            fixedHeaderArea.classList.remove('header-hidden');
-                            updateContentMargin(false, fixedHeaderHeight);
+                            updateHeaderLayout(fixedHeaderHeight);
                         }
                     }
                 }
@@ -294,6 +307,7 @@
             }
             
             scrollWrapper.addEventListener('scroll', handleScroll, { passive: true });
+
 
             function toggleDarkMode() {
                 document.documentElement.classList.toggle('dark');
@@ -385,7 +399,7 @@
 
             function setInitialLayout() {
                 const fixedHeaderHeight = fixedHeaderArea.offsetHeight;
-                updateContentMargin(false, fixedHeaderHeight);
+                updateHeaderLayout(fixedHeaderHeight);
             }
 
             const resizeObserver = new ResizeObserver(entries => {
@@ -637,11 +651,18 @@
             audioPlayer.addEventListener('ended', savePlaybackState);
 
             document.body.addEventListener('click', (event) => {
+                // Check if the click occurred within the header area or a transcript segment (which already have specific handlers)
                 const shouldIgnoreClick = event.target.closest('#fixed-header-area') || event.target.closest('.transcript-segment');
 
-                if (!shouldIgnoreClick && !audioPlayer.paused) {
-                    console.log("Background click detected: Pausing audio.");
-                    audioPlayer.pause();
+                if (!shouldIgnoreClick) {
+                    // Toggle play/pause state
+                    if (audioPlayer.paused) {
+                        console.log("Background click detected: Playing audio.");
+                        audioPlayer.play();
+                    } else {
+                        console.log("Background click detected: Pausing audio.");
+                        audioPlayer.pause();
+                    }
                 }
             });
         });
