@@ -251,7 +251,7 @@
             
             let lastScrollTop = 0;
             // Scroll threshold for less sensitive auto-hiding
-            const scrollThreshold = 100; 
+            const scrollThreshold = 0; 
             
             let isProgrammaticScroll = false;
             const PROGRAMMATIC_SCROLL_DURATION = 800; 
@@ -295,8 +295,9 @@
                              scrollWrapper.style.marginTop = '0px'; 
                         }
                     } 
-                    else if (currentScroll < lastScrollTop || currentScroll <= fixedHeaderHeight) {
+                    else if (currentScroll < lastScrollTop - 30 || currentScroll <= fixedHeaderHeight) {
                         // Scrolling Up or near top -> Show Header
+//console.log(`currentScroll:${currentScroll} lastScrollTop:${lastScrollTop} fixedHeaderHeight:${fixedHeaderHeight}`);
                         if (fixedHeaderArea.classList.contains('header-hidden')) {
                             updateHeaderLayout(fixedHeaderHeight);
                         }
