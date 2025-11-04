@@ -136,7 +136,7 @@
         #transcript-content {
             scroll-behavior: smooth;
             text-align: justify;
-            padding: 1rem;
+            padding: 1rem; /* Keeps inner text readable, away from edges */
             color: var(--text-primary);
         }
         .audio-player-container {
@@ -154,7 +154,7 @@
 
         .transcript-container {
             background-color: var(--bg-card);
-            padding: 1.5rem;
+            padding: 0; /* Updated: Set padding to zero as requested (4) */
             border-radius: 12px;
             box-shadow: 0 4px 12px var(--shadow-medium);
             margin-bottom: 2rem;
@@ -170,8 +170,9 @@
                     <header class="text-center md:text-left mb-1 md:mb-0 md:mr-4">
                         <h1 class="text-2xl md:text-3xl font-extrabold my-0" style="color: var(--text-primary);">《菩提道次第广论》手抄稿</h1>
                     </header>
-                    <div class="flex items-center">
-                        <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <div class="flex items-center w-full md:w-auto">
+                        <!-- Updated: Added classes for truncation on mobile (3) -->
+                        <select id="episode-select" class="p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 w-full md:w-auto overflow-hidden text-ellipsis whitespace-nowrap">
                             <option value="">Loading episodes...</option>
                         </select>
                     </div>
@@ -179,7 +180,6 @@
 
                 <section class="audio-player-container w-full">
                     <div class="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
-                        <!-- Added cross-origin attribute here for good measure, although setting it in JS is more dynamic -->
                         <audio id="podcast-audio" controls class="w-full md:w-auto md:flex-grow rounded-lg shadow-inner mr-0 md:mr-4" crossorigin="anonymous"> 
                             Your browser does not support the audio element.
                         </audio>
@@ -234,11 +234,10 @@
             const fontSizeDecreaseBtn = document.getElementById('font-size-decrease');
             const fontSizeIncreaseBtn = document.getElementById('font-size-increase');
             
-            // --- FIX FOR CROSS-ORIGIN AUDIO ---
             audioPlayer.crossOrigin = "anonymous";
-            // ----------------------------------
 
-            const CONTENT_PADDING_TOP = 32; 
+            // Updated: Increased padding to prevent header clipping on reveal (2)
+            const CONTENT_PADDING_TOP = 40; 
 
             let playlist = [];
             let timestampSegments = [];
@@ -250,7 +249,8 @@
             const LAST_PLAYED_STATE_KEY = 'lastPlayedState';
             
             let lastScrollTop = 0;
-            const scrollThreshold = 50; 
+            // Updated: Increased scroll threshold for less sensitive auto-hiding (1)
+            const scrollThreshold = 100; 
             
             let isProgrammaticScroll = false;
             const PROGRAMMATIC_SCROLL_DURATION = 800; // Time buffer to ignore programmatic scroll events
@@ -440,10 +440,10 @@
                     let match;
 
                     while ((match = segmentWrapperRegex.exec(contentToProcess)) !== null) {
+                        newContentHtml += contentToProcess.substring(lastProcessedIndex, match.index);
                         const time = parseFloat(match[1]);
                         const content = match[2].trim();
 
-                        newContentHtml += contentToProcess.substring(lastProcessedIndex, match.index);
                         const segmentHtml = `<span class="transcript-segment" data-time="${time}">${content}</span>`;
                         newContentHtml += segmentHtml;
                         lastProcessedIndex = match.index + match[0].length;
